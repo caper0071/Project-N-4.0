@@ -635,9 +635,9 @@ PlayerSettings:
     UNet: 1
   facebookSdkVersion: 7.9.4
   apiCompatibilityLevel: 2
-  cloudProjectId: 
-  projectName: Template_3D
-  organizationId: 
+  cloudProjectId: e7f0a35f-9469-4959-8857-e3b1d44999f1
+  projectName: N Project 4.0 (1)
+  organizationId: milek-milek
   cloudEnabled: 0
   enableNativePlatformBackendsForNewInputSystem: 0
   disableOldInputManagerSupport: 0

@@ -7,9 +7,14 @@ using UnityEngine.UI;
 
 public class Login_to_PlayFab : MonoBehaviour {
 
+
     public Canvas Canvas_login;
 
+    public Canvas Canvas_chooseVillage;
+
     public Canvas Canvas_createCharacter;
+
+    public Canvas Canvas_gotCharacter;
 
     public PlayerData PlayerData;
 
@@ -19,6 +24,38 @@ public class Login_to_PlayFab : MonoBehaviour {
 
     public InputField IE_characterName;
 
+    public Text Text_characterName;
+
+    public Text Text_villageName;
+
+    public Button Button_createCharacter;
+
+    List<string> Villages = new List<string>();
+
+    private int villageID = 0;
+
+
+    /// <summary>
+    /// ///////////////////////////////////////////////////////////////////////////
+    /// </summary>
+
+
+    private void Start()
+    {
+        Canvas_login.enabled = true;
+
+        Canvas_createCharacter.enabled = false;
+
+        Canvas_gotCharacter.enabled = false;
+
+        Canvas_chooseVillage.enabled = false;
+        
+        Villages.Add("Iwa");
+        Villages.Add("Kiri");
+        Villages.Add("Konoha");
+        Villages.Add("Suna");
+        Villages.Add("Kumo");
+    }
 
     public void LoginPlayFab()
     {
@@ -71,15 +108,27 @@ public class Login_to_PlayFab : MonoBehaviour {
 
     public void CreateCharacter()
     {
+        Button_createCharacter.interactable = false;
+
         PlayFabClientAPI.GrantCharacterToUser(new GrantCharacterToUserRequest()
         {
             CharacterName = IE_characterName.text,
-            ItemId = "Konoha"
+            ItemId = Villages[villageID]
         },
 
        result => {
 
            Debug.Log("Successfully created character!");
+
+           Canvas_createCharacter.enabled = false;
+
+           Canvas_gotCharacter.enabled = true;
+
+           Text_characterName.text = IE_characterName.text;
+
+           PlayerData.characterID = result.CharacterId;                    //przypisanie Character Id do DataCore
+           PlayerData.characterName = IE_characterName.text;               //przypisanie Character Name do DataCore
+           PlayerData.characterVillage = result.CharacterType;             //przypisanie Character Type do DataCore      
        },
 
        error => {
@@ -88,11 +137,46 @@ public class Login_to_PlayFab : MonoBehaviour {
        });
     }
 
+    public void DeleteCharacter()
+    {
+        Button_createCharacter.interactable = true;
+
+        PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest()
+        {
+            FunctionName = "deleteCharacter", // Arbitrary function name (must exist in your uploaded cloud.js file)
+            FunctionParameter = new { characterID = PlayerData.characterID }, // The parameter provided to your function
+            GeneratePlayStreamEvent = true, // Optional - Shows this event in PlayStream
+        },
+
+       result => {
+
+           Debug.Log("Character deleted");
+
+           Canvas_login.enabled = false;
+
+           Canvas_createCharacter.enabled = false;
+
+           Canvas_gotCharacter.enabled = false;
+
+           Canvas_chooseVillage.enabled = true;
+       },
+
+       error => {
+           Debug.Log(error.GenerateErrorReport());
+       });
+    }
+
     public void BackToLogin()
     {
+        villageID = 0;
+
         Canvas_login.enabled = true;
 
         Canvas_createCharacter.enabled = false;
+
+        Canvas_gotCharacter.enabled = false;
+
+        Canvas_chooseVillage.enabled = false;
     }
 
     public void Quit()
@@ -111,13 +195,15 @@ public class Login_to_PlayFab : MonoBehaviour {
 
             if (result.Characters.Count == 1)
             {
+                GetCharacterData(result.Characters[0].CharacterId);
+
                 Debug.Log("Got player character!");
 
                 PlayerData.characterID = result.Characters[0].CharacterId;                    //przypisanie Character Id do DataCore
                 PlayerData.characterName = result.Characters[0].CharacterName;                //przypisanie Character Name do DataCore
                 PlayerData.characterVillage = result.Characters[0].CharacterType;             //przypisanie Character Type do DataCore      
 
-                GetCharacterLookData(result.Characters[0].CharacterId);
+                Text_characterName.text = result.Characters[0].CharacterName;
             }
 
             else
@@ -126,7 +212,11 @@ public class Login_to_PlayFab : MonoBehaviour {
 
                 Canvas_login.enabled = false;
 
-                Canvas_createCharacter.enabled = true;
+                Canvas_createCharacter.enabled = false;
+
+                Canvas_gotCharacter.enabled = false;
+
+                Canvas_chooseVillage.enabled = true;
             }
         },
 
@@ -135,7 +225,7 @@ public class Login_to_PlayFab : MonoBehaviour {
         });
     }
 
-    private void GetCharacterLookData(string characterID)
+    private void GetCharacterData(string characterID)
     {
         PlayFabClientAPI.GetCharacterData(new GetCharacterDataRequest()
         {
@@ -144,28 +234,36 @@ public class Login_to_PlayFab : MonoBehaviour {
 
         result => {
 
-          /*  string[] index = (result.Data["look_code"].Value).Split(","[0]);
-            string[] index_stats = (result.Data["stats_code"].Value).Split(","[0]);
+            Canvas_login.enabled = false;
 
-            playerData.sex = byte.Parse(index[0]);                          
-            playerData.hair_id = byte.Parse(index[1]);
-            playerData.hair_color_id = byte.Parse(index[2]);
-            playerData.eyes_color_id = byte.Parse(index[3]);
+            Canvas_createCharacter.enabled = false;
 
-            playerData.STR = int.Parse(index_stats[0]);
-            playerData.INTL = int.Parse(index_stats[1]);
-            playerData.DEX = int.Parse(index_stats[2]);
-            playerData.exp = float.Parse(index_stats[4]);
-            playerData.lvl = int.Parse(index_stats[3]);
-            playerData.gold = int.Parse(index_stats[5]);
+            Canvas_gotCharacter.enabled = true;
 
-            playerData.items_code = result.Data["items_code"].Value;
-            playerData.quests_code = result.Data["quests_code"].Value;
+            Canvas_chooseVillage.enabled = false;
 
-            canvas_login.SetActive(false);
-            canvas_character.SetActive(true);
-            background.SetActive(false);
-            rain.SetActive(false);*/
+            /*  string[] index = (result.Data["look_code"].Value).Split(","[0]);
+              string[] index_stats = (result.Data["stats_code"].Value).Split(","[0]);
+
+              playerData.sex = byte.Parse(index[0]);                          
+              playerData.hair_id = byte.Parse(index[1]);
+              playerData.hair_color_id = byte.Parse(index[2]);
+              playerData.eyes_color_id = byte.Parse(index[3]);
+
+              playerData.STR = int.Parse(index_stats[0]);
+              playerData.INTL = int.Parse(index_stats[1]);
+              playerData.DEX = int.Parse(index_stats[2]);
+              playerData.exp = float.Parse(index_stats[4]);
+              playerData.lvl = int.Parse(index_stats[3]);
+              playerData.gold = int.Parse(index_stats[5]);
+
+              playerData.items_code = result.Data["items_code"].Value;
+              playerData.quests_code = result.Data["quests_code"].Value;
+
+              canvas_login.SetActive(false);
+              canvas_character.SetActive(true);
+              background.SetActive(false);
+              rain.SetActive(false);*/
         },
 
         error => {
@@ -220,4 +318,37 @@ public class Login_to_PlayFab : MonoBehaviour {
     private void OnPurchaseSuccess(PurchaseItemResult result) { }
     private void OnPlayfabError(PlayFabError error) { }
     #endregion
+
+
+    // Character Creator Functions
+    /////////////////////////////////////////////////////////////////
+
+    public void NextVillage()
+    {
+        villageID++;
+
+        if (villageID == 5) villageID = 0;
+
+        Text_villageName.text = Villages[villageID];
+    }
+
+    public void PreviousVillage()
+    {
+        villageID--;
+
+        if (villageID == -1) villageID = 4;
+
+        Text_villageName.text = Villages[villageID];        
+    }
+
+    public void SelectVillage()
+    {
+        Canvas_login.enabled = false;
+
+        Canvas_createCharacter.enabled = true;
+
+        Canvas_gotCharacter.enabled = false;
+
+        Canvas_chooseVillage.enabled = false;
+    }
 }
